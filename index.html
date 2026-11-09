@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>เรือนไทย ตามหาชนิดของคำ</title>
+  <style>
+    :root {
+      --navy: #18334b;
+      --gold: #d3a84f;
+      --pink: #e66b91;
+      --green: #368a68;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 18px 12px;
+      display: grid;
+      place-items: center;
+      color: var(--navy);
+      font-family: system-ui, -apple-system, "Noto Sans Thai", sans-serif;
+      background:
+        radial-gradient(ellipse at 10% 12%, #f5d992 0 5%, transparent 5.5%),
+        radial-gradient(ellipse at 91% 15%, #efbad0 0 6%, transparent 6.5%),
+        radial-gradient(ellipse at 88% 90%, #a9d8bd 0 7%, transparent 7.5%),
+        linear-gradient(145deg, #d6f1e4, #fff4d9 48%, #f7dce7);
+    }
+
+    .game {
+      width: min(780px, 100%);
+      padding: 22px;
+      border: 3px solid #fffdf6;
+      border-radius: 30px;
+      background: #fffdf7f2;
+      box-shadow: 0 20px 55px #18334b2b;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .game::before,
+    .game::after {
+      content: "❋";
+      position: absolute;
+      color: #d3a84f38;
+      font-size: 80px;
+      pointer-events: none;
+    }
+
+    .game::before { top: 62px; left: 10px; }
+    .game::after { right: 12px; bottom: 65px; }
+
+    header, #playArea, #result {
+      position: relative;
+      z-index: 1;
+    }
+
+    header { text-align: center; }
+    .ornament { color: var(--gold); letter-spacing: 8px; font-size: 17px; }
+    .lotus { font-size: 43px; margin-top: 2px; }
+    h1 { margin: 2px 0; font-size: clamp(24px, 6vw, 36px); }
+    .subtitle { margin: 0 0 14px; color: #65768a; }
+
+    .name-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 0 0 14px;
+    }
+
+    .name-box label { font-weight: 700; }
+
+    .name-box input {
+      width: min(260px, 70%);
+      padding: 9px 12px;
+      border: 2px solid #e8d6a8;
+      border-radius: 12px;
+      font: inherit;
+    }
+
+    .scorebar {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 11px 15px;
+      border: 1px solid #e8d6a8;
+      border-radius: 15px;
+      background: #fff7df;
+      font-weight: 800;
+    }
+
+    .progress {
+      height: 11px;
+      margin: 12px 0 17px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: #e8e8df;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #368a68, #d3a84f, #e66b91);
+      transition: width .25s ease;
+    }
+
+    .card {
+      padding: 20px 15px;
+      border: 2px solid #f0dfb8;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #fff9e9, #fff1f5);
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 13px;
+      border-radius: 99px;
+      color: #604616;
+      background: #f7e8bd;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .sentence {
+      margin: 16px 0 7px;
+      font-size: clamp(21px, 5vw, 29px);
+      line-height: 1.8;
+      font-weight: 750;
+    }
+
+    .target {
+      display: inline-block;
+      padding: 2px 9px 4px;
+      border: 2px solid var(--gold);
+      border-radius: 9px;
+      color: var(--navy);
+      background: #ffe58a;
+      font-weight: 900;
+    }
+
+    .target-label {
+      display: inline-block;
+      margin: 3px 0 8px;
+      padding: 7px 16px;
+      border: 2px solid var(--gold);
+      border-radius: 14px;
+      color: var(--navy);
+      background: #ffe58a;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .hint { margin: 5px 0 0; color: #718094; }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+      margin-top: 15px;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .answer {
+      min-height: 48px;
+      padding: 8px 5px;
+      border: 2px solid #e6e2d7;
+      border-radius: 14px;
+      color: var(--navy);
+      background: white;
+      font-weight: 700;
+    }
+
+    .answer:hover:not(:disabled) {
+      border-color: var(--gold);
+      background: #fff8e6;
+    }
+
+    .answer:disabled { cursor: default; opacity: .82; }
+    .answer.correct { border-color: #57ad7e; background: #dff6e7; opacity: 1; }
+    .answer.wrong { border-color: var(--pink); background: #ffe4eb; opacity: 1; }
+
+    .feedback {
+      min-height: 48px;
+      margin: 13px 0 5px;
+      padding: 10px;
+      border-radius: 13px;
+      text-align: center;
+      font-weight: 750;
+    }
+
+    .feedback.good { color: #236747; background: #e1f6e8; }
+    .feedback.bad { color: #9c3e5b; background: #fff0f3; }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .primary {
+      padding: 12px 25px;
+      border: 0;
+      border-radius: 14px;
+      color: white;
+      background: linear-gradient(100deg, #245b65, #368a68);
+      box-shadow: 0 5px 12px #18334b30;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .secondary {
+      padding: 10px 18px;
+      border: 2px solid #d3a84f;
+      border-radius: 13px;
+      color: var(--navy);
+      background: #fff7df;
+      font: inherit;
+      font-weight: 700;
+    }
+
+    .primary:active, .secondary:active { transform: scale(.98); }
+    .hidden { display: none !important; }
+
+    .result {
+      padding: 22px 10px;
+      text-align: center;
+    }
+
+    .result-emoji { font-size: 68px; }
+    .result h2 { margin: 4px; font-size: 30px; }
+    .final-score { color: #8a6422; font-size: 25px; font-weight: 900; }
+    .result-note { color: #68778b; }
+
+    .history {
+      margin: 18px auto;
+      padding: 14px;
+      max-width: 500px;
+      border: 1px solid #e8d6a8;
+      border-radius: 16px;
+      background: #fff9e9;
+      text-align: left;
+    }
+
+    .history h3 { margin: 0 0 8px; text-align: center; }
+    .history-list { margin: 0; padding-left: 25px; }
+    .history-list li { margin: 4px 0; }
+
+    @media (max-width: 520px) {
+      .game { padding: 15px 11px; }
+      .answers { grid-template-columns: repeat(2, 1fr); }
+      .scorebar { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <header>
+      <div class="ornament">❋ ❋ ❋ ❋ ❋</div>
+      <div class="lotus">🪷</div>
+      <h1>เรือนไทย ตามหาชนิดของคำ</h1>
+      <p class="subtitle">อ่านประโยค แล้วเลือกชนิดของคำที่ไฮไลต์ไว้</p>
+      <div class="name-box">
+        <label for="studentName">ชื่อผู้เล่น (ไม่บังคับ):</label>
+        <input id="studentName" type="text" maxlength="40" placeholder="พิมพ์ชื่อ">
+      </div>
+    </header>
+
+    <section id="playArea">
+      <div class="scorebar">
+        <span id="counter"></span>
+        <span id="score"></span>
+      </div>
+
+      <div class="progress">
+        <div class="progress-fill" id="progress"></div>
+      </div>
+
+      <section class="card">
+        <span class="badge" id="badge">🔎 คำที่กำลังตามหา</span>
+        <p class="sentence" id="sentence"></p>
+        <div class="target-label">คำเป้าหมาย: <span id="targetWord"></span></div>
+        <p class="hint">เลือกชนิดของคำที่แสดงในป้ายสีเหลือง</p>
+      </section>
+
+      <section class="answers" id="answers"></section>
+      <div class="feedback" id="feedback" aria-live="polite"></div>
+
+      <div class="actions">
+        <button class="primary hidden" id="nextButton">ข้อต่อไป ➜</button>
+      </div>
+    </section>
+
+    <section class="result hidden" id="result">
+      <div class="result-emoji" id="resultEmoji">🎉</div>
+      <h2>จบเกมแล้ว!</h2>
+      <p class="final-score" id="finalScore"></p>
+      <p class="result-note" id="resultNote"></p>
+
+      <div class="history">
+        <h3>📜 คะแนนแต่ละรอบในอุปกรณ์นี้</h3>
+        <ol class="history-list" id="historyList"></ol>
+      </div>
+
+      <button class="primary" id="restartButton">🔁 เล่นรอบใหม่</button>
+    </section>
+  </main>
+
+  <script>
+    const types = [
+      "คำนาม",
+      "คำสรรพนาม",
+      "คำกริยา",
+      "คำช่วยกริยา",
+      "คำวิเศษณ์",
+      "คำที่เกี่ยวกับจำนวน",
+      "คำบอกกำหนด",
+      "คำบุพบท",
+      "คำเชื่อม",
+      "คำลงท้าย",
+      "คำอุทาน",
+      "คำปฏิเสธ"
+    ];
+
+    const questions = [
+      { before: "", word: "คุณครู", after: " เล่านิทานให้เด็กฟัง", type: "คำนาม" },
+      { before: "ครอบครัวเราไปเที่ยว ", word: "เชียงใหม่", after: " ตอนปิดเทอม", type: "คำนาม" },
+      { before: "", word: "การอ่าน", after: " ช่วยเพิ่มความรู้", type: "คำนาม" },
+
+      { before: "", word: "ฉัน", after: " ชอบวาดภาพดอกไม้", type: "คำสรรพนาม" },
+      { before: "", word: "พวกเรา", after: " ช่วยกันปลูกต้นไม้ในสวน", type: "คำสรรพนาม" },
+      { before: "", word: "เขา", after: " ยืมหนังสือจากห้องสมุด", type: "คำสรรพนาม" },
+
+      { before: "น้อง ", word: "อ่าน", after: " นิทานเรื่องกระต่ายกับเต่า", type: "คำกริยา" },
+      { before: "คุณตา ", word: "ปลูก", after: " ผักไว้หลังบ้าน", type: "คำกริยา" },
+      { before: "เด็ก ๆ ", word: "หัวเราะ", after: " อย่างมีความสุข", type: "คำกริยา" },
+
+      { before: "น้อง ", word: "กำลัง", after: " ทำการบ้านอยู่ที่โต๊ะ", type: "คำช่วยกริยา" },
+      { before: "พรุ่งนี้เรา ", word: "จะ", after: " ไปเยี่ยมคุณยาย", type: "คำช่วยกริยา" },
+      { before: "นักเรียน ", word: "ต้อง", after: " ตั้งใจทำงานให้เสร็จ", type: "คำช่วยกริยา" },
+
+      { before: "กระต่ายวิ่ง ", word: "เร็ว", after: " ไปถึงเส้นชัย", type: "คำวิเศษณ์" },
+      { before: "คุณปู่เดิน ", word: "ช้า ๆ", after: " ไปตามทางในสวน", type: "คำวิเศษณ์" },
+      { before: "นักเรียนร้องเพลง ", word: "ไพเราะ", after: " บนเวที", type: "คำวิเศษณ์" },
+
+      { before: "แม่ซื้อส้ม ", word: "สาม", after: " ผลจากตลาด", type: "คำที่เกี่ยวกับจำนวน" },
+      { before: "เขาสอบได้ ", word: "ที่หนึ่ง", after: " ในการแข่งขัน", type: "คำที่เกี่ยวกับจำนวน" },
+      { before: "เราจะซื้อผ้า ", word: "อีก", after: " 2 ตัว", type: "คำที่เกี่ยวกับจำนวน" },
+      { before: "ห้องนี้มีนักเรียน 40 คน ", word: "ถ้วน", after: "", type: "คำที่เกี่ยวกับจำนวน" },
+
+      { before: "รถคัน", word: "นี้", after: " เป็นรถของคุณพ่อ", type: "คำบอกกำหนด" },
+      { before: "เก้าอี้ตัว", word: "นั้น", after: " ยังว่างอยู่", type: "คำบอกกำหนด" },
+      { before: "หนังสือเล่ม", word: "ไหน", after: " น่าสนใจที่สุด", type: "คำบอกกำหนด" },
+
+      { before: "แมวน้อยหลบอยู่ ", word: "ใต้", after: " โต๊ะ", type: "คำบุพบท" },
+      { before: "สมุดเล่มนี้เป็น ", word: "ของ", after: " ฉัน", type: "คำบุพบท" },
+      { before: "พ่อทำงานหนัก ", word: "เพื่อ", after: " ครอบครัว", type: "คำบุพบท" },
+      { before: "เขาเดินทาง ", word: "โดย", after: " รถไฟ", type: "คำบุพบท" },
+
+      { before: "พ่อ ", word: "และ", after: " แม่ช่วยกันทำอาหารเย็น", type: "คำเชื่อม" },
+      { before: "ฉันอยากไปเที่ยว ", word: "แต่", after: " วันนี้ฝนตก", type: "คำเชื่อม" },
+      { before: "เขาไม่มาทำงาน ", word: "เพราะ", after: " ลูกไม่สบาย", type: "คำเชื่อม" },
+      { before: "เราควรประหยัดพลังงาน ", word: "กล่าวคือ", after: " ควรปิดไฟเมื่อไม่ใช้", type: "คำเชื่อม" },
+
+      { before: "อย่าลืมเอาหนังสือมาด้วย ", word: "นะ", after: "", type: "คำลงท้าย" },
+      { before: "พวกเราไปอ่านหนังสือกัน ", word: "เถอะ", after: "", type: "คำลงท้าย" },
+      { before: "หนูทำการบ้านเสร็จแล้ว ", word: "ค่ะ", after: "", type: "คำลงท้าย" },
+
+      { before: "", word: "ไชโย", after: "! ทีมของเราได้รับรางวัลชนะเลิศ", type: "คำอุทาน" },
+      { before: "", word: "ว้าย", after: "! ผีเสื้อบินมาเกาะแขน", type: "คำอุทาน" },
+      { before: "", word: "โถ", after: "! ไม่น่าเลย", type: "คำอุทาน" },
+
+      { before: "เขา ", word: "ไม่", after: " ลืมทำการบ้านก่อนมาโรงเรียน", type: "คำปฏิเสธ" },
+      { before: "ฉัน ", word: "มิได้", after: " ตั้งใจทำแจกันแตก", type: "คำปฏิเสธ" },
+      { before: "ถาม: เธอเหนื่อยไหม? ตอบ: ", word: "เปล่า", after: "", type: "คำปฏิเสธ" },
+      { before: "ถาม: คุณมากับภรรยาหรือ? ตอบ: ", word: "หามิได้", after: "", type: "คำปฏิเสธ" }
+    ];
+
+    const historyKey = "thaiWordsGameScoreHistory";
+    let round = [];
+    let current = 0;
+    let score = 0;
+    let locked = false;
+
+    const $ = (id) => document.getElementById(id);
+
+    function shuffle(items) {
+      const copy = [...items];
+
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+
+      return copy;
+    }
+
+    function readHistory() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(historyKey) || "[]");
+        return Array.isArray(saved) ? saved : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function showHistory() {
+      const list = $("historyList");
+      list.replaceChildren();
+
+      const history = readHistory();
+
+      if (history.length === 0) {
+        const item = document.createElement("li");
+        item.textContent = "ยังไม่มีคะแนนที่บันทึก";
+        list.appendChild(item);
+        return;
+      }
+
+      history.forEach((entry, index) => {
+        const item = document.createElement("li");
+        const player = entry.name ? `${entry.name} — ` : "";
+        item.textContent = `รอบที่ ${index + 1}: ${player}${entry.score} / ${questions.length} คะแนน`;
+        list.appendChild(item);
+      });
+    }
+
+    function startGame() {
+      round = shuffle(questions);
+      current = 0;
+      score = 0;
+      locked = false;
+
+      $("playArea").classList.remove("hidden");
+      $("result").classList.add("hidden");
+      showQuestion();
+    }
+
+    function showQuestion() {
+      locked = false;
+      const q = round[current];
+
+      $("counter").textContent = `ข้อ ${current + 1} / ${round.length}`;
+      $("score").textContent = `⭐ คะแนน ${score}`;
+      $("progress").style.width = `${(current / round.length) * 100}%`;
+      $("badge").textContent = "🔎 คำที่กำลังตามหา";
+      $("feedback").textContent = "";
+      $("feedback").className = "feedback";
+      $("nextButton").classList.add("hidden");
+
+      $("sentence").replaceChildren(
+        document.createTextNode(q.before),
+        Object.assign(document.createElement("span"), {
+          className: "target",
+          textContent: q.word
+        }),
+        document.createTextNode(q.after)
+      );
+
+      $("targetWord").textContent = q.word;
+
+      const area = $("answers");
+      area.replaceChildren();
+
+      shuffle(types).forEach((type) => {
+        const button = document.createElement("button");
+        button.className = "answer";
+        button.textContent = type;
+        button.addEventListener("click", () => chooseAnswer(button, type));
+        area.appendChild(button);
+      });
+    }
+
+    function chooseAnswer(selected, answer) {
+      if (locked) return;
+      locked = true;
+
+      const q = round[current];
+
+      [...$("answers").children].forEach((button) => {
+        button.disabled = true;
+
+        if (button.textContent === q.type) {
+          button.classList.add("correct");
+        }
+      });
+
+      if (answer === q.type) {
+        score++;
+        $("feedback").textContent = "ถูกต้อง เก่งมาก! 🌟";
+        $("feedback").classList.add("good");
+      } else {
+        selected.classList.add("wrong");
+        $("feedback").textContent = `ยังไม่ถูก คำนี้เป็น “${q.type}” 😊`;
+        $("feedback").classList.add("bad");
+      }
+
+      $("score").textContent = `⭐ คะแนน ${score}`;
+      $("badge").textContent = `เฉลย: ${q.type} ✅`;
+      $("progress").style.width = `${((current + 1) / round.length) * 100}%`;
+      $("nextButton").textContent =
+        current === round.length - 1 ? "ดูผลคะแนน 🎉" : "ข้อต่อไป ➜";
+      $("nextButton").classList.remove("hidden");
+    }
+
+    function finishGame() {
+      const history = readHistory();
+      const name = $("studentName").value.trim();
+
+      history.push({
+        name,
+        score,
+        date: new Date().toISOString()
+      });
+
+      try {
+        localStorage.setItem(historyKey, JSON.stringify(history));
+      } catch {
+        // เกมยังแสดงผลได้ แม้เบราว์เซอร์ไม่อนุญาตให้บันทึกข้อมูล
+      }
+
+      $("playArea").classList.add("hidden");
+      $("result").classList.remove("hidden");
+      $("finalScore").textContent = `ได้ ${score} คะแนน จาก ${questions.length} คะแนน`;
+      $("resultEmoji").textContent =
+        score >= 35 ? "🏆" : score >= 25 ? "🎉" : "🪷";
+      $("resultNote").textContent =
+        score >= 35
+          ? "ยอดเยี่ยมมาก! เป็นเซียนชนิดของคำแล้ว"
+          : score >= 25
+            ? "เก่งมาก! ทบทวนอีกนิดก็แม่นยำขึ้นอีก"
+            : "ทำได้ดีแล้ว ลองเล่นอีกรอบเพื่อฝึกเพิ่มเติมนะ";
+
+      showHistory();
+    }
+
+    $("nextButton").addEventListener("click", () => {
+      current++;
+
+      if (current < round.length) {
+        showQuestion();
+      } else {
+        finishGame();
+      }
+    });
+
+    $("restartButton").addEventListener("click", startGame);
+
+    startGame();
+  </script>
+</body>
+</html>
